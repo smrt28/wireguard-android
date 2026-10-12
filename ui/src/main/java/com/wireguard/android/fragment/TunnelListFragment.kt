@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
+import com.google.zxing.client.android.Intents
 import com.google.zxing.qrcode.QRCodeReader
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -117,6 +118,8 @@ class TunnelListFragment : BaseFragment() {
                         AddTunnelsSheet.REQUEST_SCAN -> {
                             qrImportResultLauncher.launch(
                                 ScanOptions()
+                                    // Alternate normal and inverted frames for light QR codes on dark backgrounds.
+                                    .addExtra(Intents.Scan.SCAN_TYPE, 2)
                                     .setOrientationLocked(false)
                                     .setBeepEnabled(false)
                                     .setPrompt(getString(R.string.qr_code_hint))

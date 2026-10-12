@@ -12,9 +12,11 @@ import android.net.Uri
 import android.util.Log
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
+import com.google.zxing.LuminanceSource
 import com.google.zxing.NotFoundException
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.Reader
+import com.google.zxing.ReaderException
 import com.google.zxing.Result
 import com.google.zxing.common.HybridBinarizer
 import kotlinx.coroutines.Dispatchers
@@ -35,8 +37,7 @@ class QrCodeFromFileScanner(
         val pixels = IntArray(width * height)
         source.getPixels(pixels, 0, width, 0, 0, width, height)
 
-        val bBitmap = BinaryBitmap(HybridBinarizer(RGBLuminanceSource(width, height, pixels)))
-        return reader.decode(bBitmap, mapOf(DecodeHintType.TRY_HARDER to true))
+        return decodeLuminanceSource(RGBLuminanceSource(width, height, pixels), reader)
     }
 
     private fun doScan(data: Uri): Result {
@@ -72,6 +73,19 @@ class QrCodeFromFileScanner(
 
     companion object {
         private const val TAG = "QrCodeFromFileScanner"
+
+        internal fun decodeLuminanceSource(source: LuminanceSource, reader: Reader): Result {
+            val hints = mapOf(DecodeHintType.TRY_HARDER to true)
+            try {
+                return reader.decode(BinaryBitmap(HybridBinarizer(source)), hints)
+            } catch (_: ReaderException) {
+                reader.reset()
+                // Invert luminance before binarizing to support light QR codes on dark backgrounds.
+                return reader.decode(BinaryBitmap(HybridBinarizer(source.invert())), hints)
+            } finally {
+                reader.reset()
+            }
+        }
 
         /**
          * Given a reference to a file, check if this file could be parsed by this class
